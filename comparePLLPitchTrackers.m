@@ -1,5 +1,5 @@
 clear variables;
-folder = './dataset2/annotations';
+folder = '~/Documents/MATLAB/dataset2/annotations';
 
 fileinfos = dir(fullfile(folder));
 filenamesfull  = {fileinfos.name};
@@ -7,11 +7,11 @@ filenamesfull  = {fileinfos.name};
 for l = 1:length(filenamesfull)-3 
     filename = filenamesfull(l+3);
     filename = char({filename{1}(1:end-4)});
-    audioPath = strcat('./dataset2/audio/',filename);
+    audioPath = strcat('~/Documents/MATLAB/dataset2/audio/',filename);
     [timeMulti, pitchMulti, probMulti] = MultiPLLPitchtrack(audioPath);
     [timeMono, pitchMono ] = MonoPLLPitchtrack(audioPath);
     pitchMono(pitchMono<5) = 0;
-    annotationPath= strcat('./dataset2/annotations/',filename);
+    annotationPath= strcat('~/Documents/MATLAB/dataset2/annotations/',filename);
     [timePYIN, pitchPYIN] =  readSVL(annotationPath);
 
 
