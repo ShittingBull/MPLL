@@ -40,7 +40,7 @@ for i=1:numFilters
          freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 400)/1200);
          freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 400)/1200);
     end
-    [nonrec,rec] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
+    [nonrec,rec] = ellip(4,2,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
     b(i,:) = nonrec;
     a(i,:) = rec;
 end
@@ -318,8 +318,8 @@ end
 
 
 
-%figure(6)
-%plot(truePitch);
+figure(6)
+plot(truePitch);
 
 %figure(7);
 clf
@@ -344,8 +344,8 @@ hold off;
 
 medTruePitch = medfilt1(truePitch,300);
 %medTruePitch = truePitch;
-%figure(8);
-%plot(medTruePitch);
+figure(8);
+plot(medTruePitch);
 %fvtool(b(1,:),a(1,:),b(2,:),a(2,:),b(3,:),a(3,:),b(4,:),a(4,:));
   
 fileID = fopen(strcat('~/Desktop/',filename,'.txt'),'w');

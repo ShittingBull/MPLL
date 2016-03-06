@@ -5,7 +5,8 @@ fileinfos = dir(fullfile(folder));
 filenamesfull  = {fileinfos.name};
 
 for l = 1:length(filenamesfull)-3 
-    filename = filenamesfull(l+3);
+    filename = filenamesfull(l+3)
+    filesChecked (l) = filename;
     filename = char({filename{1}(1:end-4)});
     audioPath = strcat('~/Documents/MATLAB/dataset2/audio/',filename);
     [timeMulti, pitchMulti, probMulti] = MultiPLLPitchtrack(audioPath);
@@ -15,7 +16,7 @@ for l = 1:length(filenamesfull)-3
     [timePYIN, pitchPYIN] =  readSVL(annotationPath);
 
 
-    figure(1);
+    figure;
     xlabel('time (s)');
     ylabel('Frequency (Hz)');
     hold on;
@@ -98,10 +99,10 @@ for l = 1:length(filenamesfull)-3
     numSamplesTooHighMono(l) = sum(diffMono > 0);
     numSamplesTooLowMulti(l) = sum(diffMulti < 0);
     numSamplesTooHighMulti(l) = sum(diffMulti > 0);
-    tooLowRatioMono(l) = numSamplesTooLowMono / length(find(diffMono))
-    tooHighRatioMono(l) = numSamplesTooHighMono / length(find(diffMono))
-    tooLowRatioMulti(l) = numSamplesTooLowMulti / length(find(diffMulti))
-    tooHighRatioMulti(l) = numSamplesTooHighMulti / length(find(diffMulti))
+    tooLowRatioMono(l) = numSamplesTooLowMono(l) / length(find(diffMono))
+    tooHighRatioMono(l) = numSamplesTooHighMono(l) / length(find(diffMono))
+    tooLowRatioMulti(l) = numSamplesTooLowMulti(l) / length(find(diffMulti))
+    tooHighRatioMulti(l) = numSamplesTooHighMulti(l) / length(find(diffMulti))
 
 end
 
@@ -113,6 +114,8 @@ overallPrecisionMono = mean(precisionMono);
 overallRecallMono = mean(recallMono);
 overallFMeasureMono = mean(fMeasureMono);
 
+overallMeanAbsDiffMono = mean(meanAbsDiffMono);
+overallMeanAbsDiffMulti = mean(meanAbsDiffMulti);
 
 tooLowRatioMulti = mean(tooLowRatioMulti)
 tooLowRatioMono = mean(tooLowRatioMono)

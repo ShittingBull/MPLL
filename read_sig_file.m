@@ -1,5 +1,5 @@
-sigFile =  fopen('./fda_eval/rl/rl003.sig');
-fxFile =  fopen('./fda_eval/rl/rl003.fx');
+sigFile =  fopen('~/Documents/MATLAB/fda_eval/rl/rl003.sig');
+fxFile =  fopen('~/Documents/MATLAB/fda_eval/rl/rl003.fx');
 Data = textscan(fxFile,'%s','Delimiter','\n');
 Data = Data{1};
 Data = Data(16:length(Data));
@@ -43,7 +43,7 @@ actualPitch= 0;
 
 %end
 
-out = interp1(pitchTruth(:,1), pitchTruth(:,2), pitchTruthTime, 'previous');
+out = interp1(pitchTruth(:,1), pitchTruth(:,2), pitchTruthTime, 'linear');
 pitchTruthTime = pitchTruthTime / 1000;
 
 audiowrite('bagshaw.wav', sigDataD, fs);
@@ -54,7 +54,7 @@ plot(pitchTruthTime, out);
 hold on;
 plot(timeMulti,pitchMulti,'k');
 plot(timeMono,pitchMono,'g');
-plot(pitchTruth(:,1)/1000, pitchTruth(:,2),'o');
+plot(pitchTruth(:,1)/1000, pitchTruth(:,2),'+');
 hold off;
 %larData = fread(larFile,'*bit12')';
 %plot(larData);
