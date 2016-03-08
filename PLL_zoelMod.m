@@ -50,7 +50,7 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         % alpha weighs the direct path signal in relation to the LP
         % signal
         %alpha = 0.5;
-        alpha = 0.5;
+        alpha = 0.35;
         f_osc(i) = KO  * (xd_lp(i)*(1-alpha) + xd(i)*alpha) + fRangeOsc;       
         %f_osc(i) = (xd_lp(i)*(1-alpha) + xd(i)*alpha)*2 + 1;
                 
