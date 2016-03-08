@@ -6,9 +6,9 @@ in = in(:,1);
 in = mean(in, 2);
 %in = in( 1 :44100 * 10);
 %in = in(1 : 44100 * 30);
-
-downsampleFactor = fs / 11000;
-in = resample(in,11000,fs);
+wantedFs = 11000;
+downsampleFactor = fs / wantedFs;
+in = resample(in,wantedFs,fs);
 oldfs = fs;
 fs = oldfs / downsampleFactor;
 %in = tanh(sin (2 *pi *(0:1/fs:1)* 80) * 6 + 0.5) ;
@@ -37,10 +37,10 @@ for i=1:numFilters
          freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 100)/1200);
          freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 100)/1200);
     else
-         freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 400)/1200);
-         freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 400)/1200);
+         freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 100)/1200);
+         freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 100)/1200);
     end
-    [nonrec,rec] = ellip(4,2,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
+    [nonrec,rec] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
     b(i,:) = nonrec;
     a(i,:) = rec;
 end
@@ -54,7 +54,7 @@ power_4 = zeros(numFilters, length(in));
 
 for i=1:numFilters
     in_4(i,:)= filtfilt(b(i,:),a(i,:), in); 
-    [in_4_flat_env(i,:), env_4(i,:)] = agcfunnew(in_4(i,:), 5, 50, 1, -50, fs);
+    [in_4_flat_env(i,:), env_4(i,:)] = agcfunnew(in_4(i,:), 50, 100, 1, -50, fs);
     power_4(i,:) = env_4(i,:) .^2;
     %in_4_flat_env(i,:) = in_4_flat_env(i,:) .* sqrt( sum(in_4(i,:).^2) / sum(in_4(i,:).^2) );
    
@@ -65,21 +65,30 @@ for i=1:numFilters
     pitchVectors((i - 1) * 2 +1,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors((i - 1) * 2 +1,:));
     %pitchVectors((i - 1) * 2 +1,:) = medfilt1 (pitchVectors((i - 1) * 2 +1,:),30);
     [pitchVectors(i * 2,:), fosc, yc, ys, xd, xdlp] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd , freqsPll((i ) * 2));
-    pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
+     pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
     %pitchVectors(i * 2,:) = medfilt1 (pitchVectors(i * 2,:),100);
 end
 
 BS = 1024;
 figure(1);
-%plotSpectrogram(in, BS, 256, fs, 'ylim', [1 1200]);
-%hold on;
-%for i = 1 : numFilters
-%    F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
-%     plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', rand(1,3), 'LineWidth',2);
-%    F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
-%    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', rand(1,3), 'LineWidth',2);   
-%end
-%hold off;
+plotSpectrogram(in, BS, 256, fs, 'ylim', [1 1200]);
+hold on;
+for i = 1 : numFilters
+    if i == 1
+        color = 'k';
+    elseif i == 2
+        color = 'r'
+    elseif i == 3
+        color = 'g'
+    elseif i == 4
+        color = 'c';
+    end
+    F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
+    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);
+    F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
+    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);   
+end
+hold off;
 
  
 %calculate subband energy, absolute and relative compared to overall block
@@ -92,17 +101,26 @@ energySubbandBlockRel = zeros(4,floor(length(in)/energyBlockLength));
 
   
 for i = 1 : numFilters
-    
+    if i == 1
+        color = 'k';
+    elseif i == 2
+        color = 'r'
+    elseif i == 3
+        color = 'g'
+    elseif i == 4
+        color = 'c';
+    end
     figure(i+1);
     plotSpectrogram(in_4(i,:), BS, 256, fs, 'ylim', [1 1200]);
     hold on;
     F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', 'k', 'LineWidth',2);
+    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
     F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', 'r', 'LineWidth',2);
+    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
     hold off;
     energySubband(i,:) = in_4(i,:).^2;
-   
+    xlim([1 5.7]);
+    ylim([freqsPll(i*2-1)-50 freqsPll(i*2)+50]);
 end
 
 for i=1:floor(length(in)/energyBlockLength)
@@ -196,7 +214,7 @@ for i = 1: length(in)
         end
         
 
-        %numPlls in 1 50Cent range
+        %numPlls in 50Cent range
         candidates(j) = candidates(j) + sum(pitchDiffCent(j,:,i)<50) * 25;
   
         %distance to pitch at t-1
@@ -221,7 +239,7 @@ for i = 1: length(in)
 
     [val,Idx] = max(candidates);
     candidateScores(:,i) = candidates;
-    if(val > 250 && Idx <=6 || val > 200 && Idx > 6)
+    if(val > 220 && Idx <=6 || val > 200 && Idx > 6)
         truePitch(i) = pitchVectors(Idx, i);
     else
         truePitch(i) = 0;
@@ -318,44 +336,47 @@ end
 
 
 
-figure(6)
-plot(truePitch);
+%figure(6)
+%plot(truePitch);
 
-%figure(7);
-clf
-hold on;
-for i = 1 : numFilters
-    if i == 1
-        color = 'k';
-    elseif i == 2
-        color = 'r'
-    elseif i == 3
-        color = 'g'
-    elseif i == 4
-        color = 'b';
-    end
-    F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
-    plot(F0,'color', color, 'LineWidth',2);
-    hold on;
-    F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
-    plot(F0,'color', color, 'LineWidth',2);
-end
-hold off;
+% figure(7);
+% clf
+% hold on;
+% for i = 1 : numFilters
+%     if i == 1
+%         color = 'k';
+%     elseif i == 2
+%         color = 'r'
+%     elseif i == 3
+%         color = 'g'
+%     elseif i == 4
+%         color = 'b';
+%     end
+%     F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
+%     time = 1/fs:1/fs:length(F0)/fs;
+%     plot(time, F0,'color', color, 'LineWidth',2);
+%     hold on;
+%     F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
+%     plot(time, F0,'color', color, 'LineWidth',2);
+% end
+% hold off;
 
 medTruePitch = medfilt1(truePitch,300);
 %medTruePitch = truePitch;
-figure(8);
-plot(medTruePitch);
+%figure(8);
+%plot(medTruePitch);
 %fvtool(b(1,:),a(1,:),b(2,:),a(2,:),b(3,:),a(3,:),b(4,:),a(4,:));
   
 fileID = fopen(strcat('~/Desktop/',filename,'.txt'),'w');
+downsampleFactor = fs / 100;
 
-timeVectorOut = zeros(1, ceil(length(medTruePitch) / 110));
-pitchOut = zeros(1, ceil(length(medTruePitch) / 110));
-probOut = zeros(1, ceil(length(medTruePitch) / 110));
-for i = 1:110:length(medTruePitch)
-    timeVectorOut (((i-1)/110) + 1) = (i-1) / 11000; 
-    pitchOut (((i-1)/110) + 1) = medTruePitch(i);
-    probOut (((i-1)/110) + 1) = prob(i);
+timeVectorOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
+pitchOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
+probOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
+for i = downsampleFactor:downsampleFactor:length(medTruePitch)
+    timeVectorOut (((i)/downsampleFactor)) = (i) / fs; 
+    pitchOut ((i/downsampleFactor)) = medTruePitch(i);
+    probOut ((i/downsampleFactor)) = prob(i);
     %fprintf(fileID,'%.3f \t %.3f \t %.3f \n', (i-1)/11000 , medTruePitch(i), prob(i));
 end
+
