@@ -6,18 +6,35 @@ in = in(:,1);
 in = mean(in, 2);
 %in = in( 1 :44100 * 10);
 %in = in(1 : 44100 * 30);
-wantedFs = 11000;
-downsampleFactor = fs / wantedFs;
-in = resample(in,wantedFs,fs);
+targetFs = 11000;
+downsampleFactor = fs / targetFs;
+in = resample(in,targetFs,fs);
 oldfs = fs;
 fs = oldfs / downsampleFactor;
-%in = tanh(sin (2 *pi *(0:1/fs:1)* 80) * 6 + 0.5) ;
-%freq = 90;
-% in = sin (2 *pi *(0:1/fs:1)* freq);
-% for i = 2: 6 
-%     in = in + sin (2 *pi *(0:1/fs:1)* freq *i);
+
+
+
+
+% t = 1/targetFs:1/targetFs:.5;
+% f = 82.41 * 2^(17/12);
+% not = 10;
+% in = 0;
+% for i=1:not
+%     in = in + sin (2 * pi * t * f *i); %.* (1- i/(not +1));
 % end
-% in = in ./5;
+% in = in ./not;
+% env (1:targetFs/10) = 0;
+% for i = 1: targetFs/10 
+%     env (i +targetFs/10) = 1/(targetFs/10) * i; 
+% end
+% env(targetFs/10 * 2 +1 : length(t)) = 1;
+% %env(end - targetFs/10 : end) = 0;
+% for i = 1: targetFs/10
+%     env (i +targetFs/10*4) = 1-(1/(targetFs/10)) * i; 
+% end
+% in = in .* env;
+% in(targetFs/10*5:targetFs/10*6) = 0;
+
 
 
 %%%%%%%%-> filtering and Pll pitch tracking, 2 PLLs per Subband
@@ -65,30 +82,33 @@ for i=1:numFilters
     pitchVectors((i - 1) * 2 +1,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors((i - 1) * 2 +1,:));
     %pitchVectors((i - 1) * 2 +1,:) = medfilt1 (pitchVectors((i - 1) * 2 +1,:),30);
     [pitchVectors(i * 2,:), fosc, yc, ys, xd, xdlp] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd , freqsPll((i ) * 2));
-     pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
+    pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
     %pitchVectors(i * 2,:) = medfilt1 (pitchVectors(i * 2,:),100);
 end
 
 BS = 1024;
-figure(1);
-plotSpectrogram(in, BS, 256, fs, 'ylim', [1 1200]);
-hold on;
-for i = 1 : numFilters
-    if i == 1
-        color = 'k';
-    elseif i == 2
-        color = 'r'
-    elseif i == 3
-        color = 'g'
-    elseif i == 4
-        color = 'c';
-    end
-    F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);
-    F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);   
-end
-hold off;
+% figure(1);
+% plotSpectrogram(in, BS, 256, fs, 'ylim', [1 1450]);
+% xlabel('Time (s)');
+% ylabel('Frequency (Hz)');
+% hold on;
+% for i = 1 : numFilters
+%     if i == 1
+%         color = 'k';
+%     elseif i == 2
+%         color = 'r';
+%     elseif i == 3
+%         color = 'g';
+%     elseif i == 4
+%         color = 'c';
+%     end
+%     F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
+%     plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);
+%     F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
+%     plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',1.5);   
+%     %xlim([1 5.7]);
+% end
+% hold off;
 
  
 %calculate subband energy, absolute and relative compared to overall block
@@ -99,29 +119,32 @@ energySubbandBlock = zeros(4,floor(length(in)/energyBlockLength));
 energySubbandBlockRel = zeros(4,floor(length(in)/energyBlockLength));
 %energySubbandBlockRel1 = zeros(4,floor(length(in)/energyBlockLength));
 
-  
-for i = 1 : numFilters
-    if i == 1
-        color = 'k';
-    elseif i == 2
-        color = 'r'
-    elseif i == 3
-        color = 'g'
-    elseif i == 4
-        color = 'c';
-    end
-    figure(i+1);
-    plotSpectrogram(in_4(i,:), BS, 256, fs, 'ylim', [1 1200]);
-    hold on;
-    F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
-    F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
-    plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
-    hold off;
-    energySubband(i,:) = in_4(i,:).^2;
-    xlim([1 5.7]);
-    ylim([freqsPll(i*2-1)-50 freqsPll(i*2)+50]);
-end
+%figure(2);  
+ for i = 1 : numFilters
+%     if i == 1
+%         color = 'k';
+%     elseif i == 2
+%         color = 'r';
+%     elseif i == 3
+%         color = 'g';
+%     elseif i == 4
+%         color = 'c';
+%     end
+%     figure(i+1);
+%     %subplot(4,1,i);
+%     plotSpectrogram(in_4(i,:), BS, 256, fs, 'ylim', [1 1450]);
+%     xlabel('Time (s)');
+%     ylabel('Frequency (Hz)');
+%     hold on;
+%     F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
+%     plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
+%     F0(1,:) = pitchVectors((i - 1) * 2 + 2,:);
+%     plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end),'color', color, 'LineWidth',2);
+%     hold off;
+     energySubband(i,:) = in_4(i,:).^2;
+%     %xlim([1 5.7]);
+%     ylim([freqsPll(i*2-1)-50 freqsPll(i*2)+50]);
+ end
 
 for i=1:floor(length(in)/energyBlockLength)
     sumPower = sum(power_4(:, i*energyBlockLength));
@@ -162,18 +185,18 @@ end
 % find Subharmonics and Overtones for PLL pitch
 for i = 1 : length(pitchVectors(1,:))-energyBlockLength
     for j = 1 : numFilters * 2           
-       for k = 1 :  numFilters * 2
+       for k = j :  numFilters * 2
             if j == k
                 pitchDiff(j,k,i) = 50000;
                 pitchDiffCent (j,k,i) = 50000;
-                continue;
-            end  
-            if j<k   
+                continue;  
+            elseif j<k   
                 for l = 2: numOvertones
                     if abs(1200 * log2(pitchVectors(j,i) * l/pitchVectors (k,i))) < 40
-                       enSBB = energySubbandBlockRel(ceil(j/2),ceil(i/energyBlockLength));
+                       enSBBk = energySubbandBlockRel(ceil(k/2),ceil(i/energyBlockLength));
+                       enSBBj = energySubbandBlockRel(ceil(j/2),ceil(i/energyBlockLength));
                        
-                       if pitchDiffPairsCent(ceil(j/2),i) < 100 &&(energySubbandBlockRel(ceil(j/2),ceil(i/energyBlockLength))>0.03)
+                       if pitchDiffPairsCent(ceil(j/2),i) < 100 &&(enSBBk>0.03)&&(enSBBj>0.03)
                             overToneCounter (j,l,i) = overToneCounter (j,l,i) +1;
                             subHarmonicCounter(k,l,i) = subHarmonicCounter(k,l,i)+1;  
                        end
@@ -185,7 +208,30 @@ for i = 1 : length(pitchVectors(1,:))-energyBlockLength
        %pitchDiffCentVector((j-1)*numFilters*2+1:(j)*numFilters*2,i) =  pitchDiffCent(j,:,i);
     end    
 end
-
+% for i = 1 : length(pitchVectors(1,:))-energyBlockLength
+%     for j = 1 : numFilters * 2
+%         for l = 2: numOvertones
+%             for k = j :  numFilters * 2
+%                 if j == k
+%                     pitchDiff(j,k,i) = 50000;
+%                     pitchDiffCent (j,k,i) = 50000;
+%                     continue;
+%                 elseif j<k
+%                     if abs(1200 * log2(pitchVectors(j,i) * l/pitchVectors (k,i))) < 40
+%                         enSBBk = energySubbandBlockRel(ceil(k/2),ceil(i/energyBlockLength));
+%                         enSBBj = energySubbandBlockRel(ceil(j/2),ceil(i/energyBlockLength));
+%                         
+%                         if pitchDiffPairsCent(ceil(j/2),i) < 100 &&(enSBBk>0.03)&&(enSBBj>0.03)
+%                             overToneCounter (j,l,i) = overToneCounter (j,l,i) +1;
+%                             subHarmonicCounter(k,l,i) = subHarmonicCounter(k,l,i)+1;
+%                             break;
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%     end
+% end
 
 
 candidateScores = zeros(numFilters * 2, length(in));
@@ -336,21 +382,23 @@ end
 
 
 
-%figure(6)
-%plot(truePitch);
+% figure(6)
+% plot(truePitch);
 
 % figure(7);
 % clf
+% xlabel('Time (s)');
+% ylabel('Frequency (Hz)');
 % hold on;
 % for i = 1 : numFilters
 %     if i == 1
 %         color = 'k';
 %     elseif i == 2
-%         color = 'r'
+%         color = 'r';
 %     elseif i == 3
-%         color = 'g'
+%         color = 'g';
 %     elseif i == 4
-%         color = 'b';
+%         color = 'c';
 %     end
 %     F0(1,:) = pitchVectors((i - 1) * 2 +1,:);
 %     time = 1/fs:1/fs:length(F0)/fs;
@@ -364,19 +412,27 @@ end
 medTruePitch = medfilt1(truePitch,300);
 %medTruePitch = truePitch;
 %figure(8);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
 %plot(medTruePitch);
-%fvtool(b(1,:),a(1,:),b(2,:),a(2,:),b(3,:),a(3,:),b(4,:),a(4,:));
+%fvtool(b(1,:),a(1,:),b(2,:),a(2,:),b(3,:),a(3,:),b(4,:),a(4,:),'Fs',fs);
   
 fileID = fopen(strcat('~/Desktop/',filename,'.txt'),'w');
 downsampleFactor = fs / 100;
 
-timeVectorOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
-pitchOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
-probOut = zeros(1, floor(length(medTruePitch) / downsampleFactor));
-for i = downsampleFactor:downsampleFactor:length(medTruePitch)
-    timeVectorOut (((i)/downsampleFactor)) = (i) / fs; 
-    pitchOut ((i/downsampleFactor)) = medTruePitch(i);
-    probOut ((i/downsampleFactor)) = prob(i);
+timeVectorOut = zeros(1, round(length(medTruePitch) / downsampleFactor));
+pitchOut = zeros(1, round(length(medTruePitch) / downsampleFactor));
+probOut = zeros(1, round(length(medTruePitch) / downsampleFactor));
+for i = downsampleFactor:downsampleFactor:round(length(medTruePitch)/100) * 100
+    if i > length(medTruePitch/100)
+         timeVectorOut (((i)/downsampleFactor)) = i / fs; 
+         pitchOut ((i/downsampleFactor)) = medTruePitch(end);
+         probOut ((i/downsampleFactor)) = prob(end);
+    else
+        timeVectorOut (((i)/downsampleFactor)) = i / fs; 
+        pitchOut ((i/downsampleFactor)) = medTruePitch(i);
+        probOut ((i/downsampleFactor)) = prob(i);
+    end
     %fprintf(fileID,'%.3f \t %.3f \t %.3f \n', (i-1)/11000 , medTruePitch(i), prob(i));
 end
 
