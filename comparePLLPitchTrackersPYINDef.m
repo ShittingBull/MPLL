@@ -1,3 +1,4 @@
+tic
 clear variables;
 folder = '~/Documents/MATLAB/dataset2/PitchTruthTracks';
 
@@ -18,21 +19,21 @@ for l = 1:length(filenamesfull)-3
     pitchMono(pitchMono<5) = 0;
     yinPitchPath= strcat('~/Documents/MATLAB/dataset2/PitchTruthMauch/',filename);
     [timePYIN, pitchPYIN] =  readSVL(yinPitchPath);
-    pitchLength(l) = length(pitchMulti);
-
-    figure;
-    xlabel('time (s)');
-    ylabel('Frequency (Hz)');
-    title(filename);
-    hold on;
-    plot(timeAnnotation, pitchAnnotation,'+');
-    plot(timePYIN, pitchPYIN,'k','LineWidth',1.5);
-    plot(timeMono, pitchMono,'g','LineWidth',1.5);
-    plot(timeMulti, pitchMulti,'r','LineWidth',1.5);
-    hold off;
-    legend('Ground Truth', 'PYIN','Mono PLL', 'Multi PLL' );
+    pitchLength(l) = length(pitchAnnotation);
     
-
+%     figure;
+%     xlabel('Time (s)');
+%     ylabel('Frequency (Hz)');
+%     %title(filename);
+%     hold on;
+%     plot(timeAnnotation, pitchAnnotation,'+');
+%     plot(timePYIN, pitchPYIN,'k','LineWidth',1.5);
+%     plot(timeMono, pitchMono,'g','LineWidth',1.5);
+%     plot(timeMulti, pitchMulti,'r','LineWidth',1.5);
+%     hold off;
+    %legend('Ground Truth', 'PYIN','Mono PLL', 'Multi PLL' );
+    %xlim([1 5.7]);
+    %ylim([0 400]);
 
    
     
@@ -111,11 +112,20 @@ for l = 1:length(filenamesfull)-3
             %if pitchMono(i)~=0
             %    diffMono (i) = 1200 * log2(pitchMono(i)/pitchPYIN(i));
             %end
-            if pitchMulti(i)~=0 && pitchMono(i)~=0
+            if pitchMulti(i)~=0 
                 diffMulti(l,i) = 1200 * log2(pitchMulti(i)/pitchPYIN(i));
+            else 
+                diffMulti (l,i) = NaN;
+            end
+            if pitchMono(i)~=0
                 diffMono (l,i) = 1200 * log2(pitchMono(i)/pitchPYIN(i));
+            else
+                diffMono (l,i) = NaN;    
             end 
-        end
+        else
+                diffMono (l,i) = NaN;
+                diffMulti (l,i) = NaN;
+        end   
     end
     
     
@@ -128,29 +138,29 @@ for l = 1:length(filenamesfull)-3
     precisionPYIN(l) = correctSamplesPYINPrecision / overallSamplesPYINPrecision;
     recallPYIN (l) = correctSamplesPYINRecall / overallSamplesRecall;
 
-    fMeasureMulti(l) = 2 * (precisionMulti(l) * recallMulti(l))/(precisionMulti(l) + recallMulti(l));
+    fMeasureMulti(l) = 2 *  (precisionMulti(l) * recallMulti(l))/(precisionMulti(l) + recallMulti(l));
     fMeasureMono(l) = 2 * (precisionMono(l) * recallMono(l))/(precisionMono(l) + recallMono(l));
     fMeasurePYIN(l) = 2 * (precisionPYIN(l) * recallPYIN(l))/(precisionPYIN(l) + recallPYIN(l));
     
    
 
-    absDiffMono = abs(diffMono);
-    absDiffMulti = abs(diffMulti);
-    meanAbsDiffMono(l) = mean(absDiffMono(l,absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0));
-    meanAbsDiffMulti(l) = mean(absDiffMulti(l,absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0));
-    meanDiffMono(l) = mean(diffMono(l,absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0));
-    meanDiffMulti(l) = mean(diffMulti(l,absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0));
-    stdDiffMono(l) = std(diffMono(l,(absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0)));
-    stdDiffMulti (l) = std(diffMulti(l,(absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0)))
-    numSamplesTooLowMono(l) = sum(diffMono(l,:) < 0 & diffMono(l,:) > -50);
-    numSamplesTooHighMono(l) = sum(diffMono(l,:) > 0 & diffMono(l,:) < 50);
-    numSamplesTooLowMulti(l) = sum(diffMulti(l,:) < 0 & diffMulti(l,:) > -50);
-    numSamplesTooHighMulti(l) =sum(diffMulti(l,:) > 0 & diffMulti(l,:) < 50);
+    %absDiffMono = abs(diffMono);
+    %absDiffMulti = abs(diffMulti);
+    %meanAbsDiffMono(l) = mean(absDiffMono(l,absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0));
+    %meanAbsDiffMulti(l) = mean(absDiffMulti(l,absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0));
+    %meanDiffMono(l) = mean(diffMono(l,absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0));
+    %meanDiffMulti(l) = mean(diffMulti(l,absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0));
+    %stdDiffMono(l) = std(diffMono(l,(absDiffMono(l,:) < 50 & absDiffMono(l,:) > 0)));
+    %stdDiffMulti (l) = std(diffMulti(l,(absDiffMulti(l,:) < 50 & absDiffMulti(l,:) > 0)))
+    %numSamplesTooLowMono(l) = sum(diffMono(l,:) < 0 & diffMono(l,:) > -50);
+    %numSamplesTooHighMono(l) = sum(diffMono(l,:) > 0 & diffMono(l,:) < 50);
+    %numSamplesTooLowMulti(l) = sum(diffMulti(l,:) < 0 & diffMulti(l,:) > -50);
+    %numSamplesTooHighMulti(l) =sum(diffMulti(l,:) > 0 & diffMulti(l,:) < 50);
     %tooLowRatioMono(l) = numSamplesTooLowMono(l) / length(find(diffMono(l,:)))
     %tooHighRatioMono(l) = numSamplesTooHighMono(l) / length(find(diffMono(l,:)))
     %tooLowRatioMulti(l) = numSamplesTooLowMulti(l) / length(find(diffMulti(l,:)))
     %tooHighRatioMulti(l) = numSamplesTooHighMulti(l) / length(find(diffMulti(l,:)))
-
+    
 end
 
 overallPrecisionMulti = 0;
@@ -164,17 +174,15 @@ overallPrecisionPYIN = 0;
 overallRecallPYIN = 0;
 overallFMeasurePYIN = 0;
 
-overallMeanAbsDiffMono = 0;
-overallMeanAbsDiffMulti = 0;
+%overallMeanAbsDiffMono = 0;
+%overallMeanAbsDiffMulti = 0;
 
-overallToLowRatioMulti = 0;
-overallToLowRatioMono = 0;
 
-overallMeanDiffMono = 0;
-overallMeanDiffMulti = 0;
+%overallMeanDiffMono = 0;
+%overallMeanDiffMulti = 0;
 
-overallStdDiffMono = 0;
-overallStdDiffMulti = 0;
+%overallStdDiffMono = 0;
+%overallStdDiffMulti = 0;
 
 for i = 1: length(precisionMulti)
 
@@ -192,32 +200,55 @@ for i = 1: length(precisionMulti)
     overallRecallPYIN = overallRecallPYIN + recallPYIN(i) * lickPortion;
     overallFMeasurePYIN = overallFMeasurePYIN + fMeasurePYIN(i) * lickPortion;
     
-    overallTooLowRatioMono = sum(numSamplesTooLowMono) / (sum(numSamplesTooLowMono) + sum(numSamplesTooHighMono));
-    overallTooHighRatioMono = sum(numSamplesTooHighMono) / (sum(numSamplesTooLowMono) + sum(numSamplesTooHighMono));
+    %overallTooLowRatioMono = sum(numSamplesTooLowMono) / (sum(numSamplesTooLowMono) + sum(numSamplesTooHighMono));
+    %overallTooHighRatioMono = sum(numSamplesTooHighMono) / (sum(numSamplesTooLowMono) + sum(numSamplesTooHighMono));
     
-     overallTooLowRatioMulti = sum(numSamplesTooLowMulti) / (sum(numSamplesTooLowMulti) + sum(numSamplesTooHighMulti));
-    overallTooHighRatioMulti = sum(numSamplesTooHighMulti) / (sum(numSamplesTooLowMulti) + sum(numSamplesTooHighMulti));
+    %overallTooLowRatioMulti = sum(numSamplesTooLowMulti) / (sum(numSamplesTooLowMulti) + sum(numSamplesTooHighMulti));
+    %overallTooHighRatioMulti = sum(numSamplesTooHighMulti) / (sum(numSamplesTooLowMulti) + sum(numSamplesTooHighMulti));
     
-    overallMeanAbsDiffMono = overallMeanAbsDiffMono + meanAbsDiffMono (i) * lickPortion;
-    overallMeanAbsDiffMulti = overallMeanAbsDiffMulti + meanAbsDiffMulti (i) * lickPortion;
+    %overallMeanAbsDiffMono = overallMeanAbsDiffMono + meanAbsDiffMono (i) * lickPortion;
+    %overallMeanAbsDiffMulti = overallMeanAbsDiffMulti + meanAbsDiffMulti (i) * lickPortion;
     
-    overallMeanDiffMono  = overallMeanDiffMono + meanDiffMono(i) * lickPortion;
-    overallMeanDiffMulti  = overallMeanDiffMulti + meanDiffMulti(i) * lickPortion;
+    %overallMeanDiffMono  = overallMeanDiffMono + meanDiffMono(i) * lickPortion;
+    %overallMeanDiffMulti  = overallMeanDiffMulti + meanDiffMulti(i) * lickPortion;
     
-    overallStdDiffMono = overallStdDiffMono + stdDiffMono(i) * lickPortion;
-    overallStdDiffMulti = overallStdDiffMulti + stdDiffMulti(i) * lickPortion;
+    %overallStdDiffMono = overallStdDiffMono + stdDiffMono(i) * lickPortion;
+    %overallStdDiffMulti = overallStdDiffMulti + stdDiffMulti(i) * lickPortion;
     
   
 end
 
+diffMultiVectorZeroPad = reshape(diffMulti,1,[]);
+diffMultiVector = diffMultiVectorZeroPad;
+diffMultiVector(diffMultiVector == 0) = NaN;
+overallDiffMedianMulti = median(diffMultiVector(~isnan(diffMultiVector) & abs(diffMultiVector) < 50));
+overallDiffTooLowRatioMulti = sum(diffMultiVector < 0) / (sum(diffMultiVector < 0) + sum(diffMultiVector > 0));
+overallDiffMeanMulti = mean(diffMultiVector(~isnan(diffMultiVector) & abs(diffMultiVector) < 50));
+overallDiffAbsMeanMulti = mean(abs(diffMultiVector(~isnan(diffMultiVector) & abs(diffMultiVector) < 50)));
+overallDiffStdDevMulti = std (diffMultiVector(~isnan(diffMultiVector) & abs(diffMultiVector) < 50));
 
 
+diffMonoVectorZeroPad = reshape(diffMono,1,[]);
+diffMonoVector = diffMonoVectorZeroPad;
+diffMonoVector(diffMonoVector == 0) = NaN;
 
-% figure
-% histogram(diffMono(abs(diffMono)<50),200);
-% set(gca,'yscale','log')
-% 
-% figure
-% histogram(diffMulti(abs(diffMulti)<50),200);
-% set(gca,'yscale','log')
+overallDiffMedianMono = median(diffMonoVector(diffMonoVector ~= 0 & abs(diffMonoVector) < 50));
+overallDiffTooLowRatioMono = sum(diffMonoVector < 0) / (sum(diffMonoVector < 0) + sum(diffMonoVector > 0));
+overallDiffMeanMono = mean(diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoVector) < 50));
+overallDiffAbsMeanMono = mean(abs(diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoVector) < 50)));
+overallDiffStdDevMono = std (diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoVector) < 50));
+
+binCenters = -49.75:.5:49.75
+figure;
+histogram(diffMonoVector(abs(diffMonoVector)<50),200);
+set(gca,'yscale','log')
+xlabel('Deviation from PYIN pitch in Cent');
+ylabel('Occurence');
+
+figure;
+histogram(diffMultiVector(abs(diffMultiVector)<50),200);
+set(gca,'yscale','log')
+xlabel('Deviation from PYIN pitch in Cent');
+ylabel('Occurence');
+toc
 
