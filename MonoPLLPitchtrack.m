@@ -41,12 +41,20 @@ t = (1:length(inpp)) ./ fs;
 % plot(F0)
 % plot((1:length(F0)-BS/2+1)./fs, F0(BS/2:end), 'k', 'LineWidth',2);
 % hold off;
-timeVectorOut = zeros(1, floor(length(F0) / (fs/100)));
-pitchOut = zeros(1, floor(length(F0) / (fs/100)));
+timeVectorOut = zeros(1, round(length(F0) / (fs/100)));
+pitchOut = zeros(1, round(length(F0) / (fs/100)));
 %probOut = zeros(1, ceil(length(medTruePitch) / 441));
-for i = fs/100:fs/100:length(F0)
-    timeVectorOut (i/(fs/100)) = i / fs; 
-    pitchOut (i/(fs/100)) = F0(i);
+downsampleFactor = fs / 100;
+for i = downsampleFactor:downsampleFactor:round(length(F0)/100) * 100
+    
+    if i > length(F0/100)
+         timeVectorOut (i/downsampleFactor) = i / fs; 
+         pitchOut (i/downsampleFactor) = F0(end);
+     
+    else
+        timeVectorOut (i/downsampleFactor) = i / fs; 
+        pitchOut (i/downsampleFactor) = F0(i);
+    end
     %probOut (((i-1)/441) + 1) = prob(i);
     %fprintf(fileID,'%.3f \t %.3f \t %.3f \n', (i-1)/11000 , medTruePitch(i), prob(i));
 end
