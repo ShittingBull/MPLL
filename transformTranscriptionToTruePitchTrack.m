@@ -1,6 +1,6 @@
 %folder = './dataset1/annotation';
 clear variables;
-folder = '~/Documents/MATLAB/dataset2/annotations';
+folder = '~/Documents/MATLAB/dataset1/test';
 
 fileinfos = dir(fullfile(folder));
 filenamesfull  = {fileinfos.name};
