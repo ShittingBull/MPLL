@@ -6,7 +6,7 @@ s = strcat(path,'.txt')
 fid = fopen(s);
 timePitchProb = fscanf(fid,'%f %f %f',sizeTimePitchProb);
 fclose(fid);
-time = timePitchProb(1,:);
-pitch = timePitchProb(2,:);
+time = timePitchProb(1,2:end);
+pitch = timePitchProb(2,2:end);
 end
 
