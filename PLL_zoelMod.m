@@ -45,7 +45,12 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         
         % get F0
         %F0(i) = abs(2*xd_lp(i) + 1);
-        F0(i) = fRangeOsc + KO * xd_lp(i)  ;
+        F0(i) = fRangeOsc + KO * xd_lp(i);
+%         if i>1
+%             F0(i) =  F0_(i) * (1 - 0.98) + 0.98 * F0(i-1);
+%         else
+%             F0(i) = F0_(i) * (1 - 0.98);
+%         end
         % generate oscillator control signal
         % alpha weighs the direct path signal in relation to the LP
         % signal
@@ -53,7 +58,7 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         alpha = 0.35;
         f_osc(i) = KO  * (xd_lp(i)*(1-alpha) + xd(i)*alpha) + fRangeOsc;       
         %f_osc(i) = (xd_lp(i)*(1-alpha) + xd(i)*alpha)*2 + 1;
-                
+
         % PLL oscillator
         %oscillator states holds former outputsamples state(1) real
         %state(2) complex
