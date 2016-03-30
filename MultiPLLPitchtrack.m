@@ -44,18 +44,19 @@ a = zeros(numFilters,9);
 b = zeros(numFilters,9);
 freqs = zeros(1,numFilters * 2);
 freqsPll = zeros(1,numFilters * 2);
+startFreq = 82.41;
 for i=1:numFilters
     % caluclation filter cutoff frqeuencies for octave wise PLL runs 
-    freqs((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1)))/1200);
-    freqs((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i))/1200);
+    freqs((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1)))/1200);
+    freqs((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i))/1200);
     %freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 300)/1200);
     %calculating PLL center frequencies
     if i == 4
-         freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 100)/1200);
-         freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 100)/1200);
+         freqsPll((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i) + 100)/1200);
+         freqsPll((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1))- 100)/1200);
     else
-         freqsPll((i - 1) * 2 + 2) = 82.41 * 2^(((1200 * i) + 100)/1200);
-         freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 100)/1200);
+         freqsPll((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i) + 100)/1200);
+         freqsPll((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1))- 100)/1200);
     end
     [nonrec,rec] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
     b(i,:) = nonrec;
@@ -190,19 +191,19 @@ for i = 1 : length(pitchVectors(1,:))-energyBlockLength
                 pitchDiff(j,k,i) = 50000;
                 pitchDiffCent (j,k,i) = 50000;
                 continue;  
-            elseif j<k   
-                for l = 2: numOvertones
-                    if abs(1200 * log2(pitchVectors(j,i) * l/pitchVectors (k,i))) < 40
+             elseif j<k   
+                %for l = 2: numOvertones
+                    if round(pitchVectors (k,i)/pitchVectors(j,i)) <=6 && round(pitchVectors (k,i)/pitchVectors(j,i)) > 1  && abs(1200 * log2(pitchVectors(j,i) * round(pitchVectors (k,i)/pitchVectors(j,i))/pitchVectors (k,i))) < 40
                        enSBBk = energySubbandBlockRel(ceil(k/2),ceil(i/energyBlockLength));
                        enSBBj = energySubbandBlockRel(ceil(j/2),ceil(i/energyBlockLength));
                        
-                       if pitchDiffPairsCent(ceil(j/2),i) < 100 &&(enSBBk>0.03)&&(enSBBj>0.03)
-                            overToneCounter (j,l,i) = overToneCounter (j,l,i) +1;
-                            subHarmonicCounter(k,l,i) = subHarmonicCounter(k,l,i)+1;  
+                       if  pitchDiffPairsCent(ceil(j/2),i) < 100 &&(enSBBk>0.03)&&(enSBBj>0.03)
+                            overToneCounter (j,round(pitchVectors (k,i)/pitchVectors(j,i)),i) = overToneCounter (j,round(pitchVectors (k,i)/pitchVectors(j,i)),i) +1;
+                            subHarmonicCounter(k,round(pitchVectors (k,i)/pitchVectors(j,i)),i) = subHarmonicCounter(k,round(pitchVectors (k,i)/pitchVectors(j,i)),i)+1;  
                        end
 
                     end
-                end  
+                %end  
             end   
        end
        %pitchDiffCentVector((j-1)*numFilters*2+1:(j)*numFilters*2,i) =  pitchDiffCent(j,:,i);
@@ -255,8 +256,9 @@ for i = 1: length(in)
         end
         
         %numOvertones
-        if  pitchDiffPairsCent(ceil(j/2), i) <100
+        if  pitchDiffPairsCent(ceil(j/2), i) <100 %&& j<8
             candidates(j) = candidates(j) + 25 * sum(overToneCounter(j,:,i));
+            %candidates(j) = candidates(j) + sum(overToneCounter(j,:,i)/(8-j) * 100);
         end
         
 
@@ -435,4 +437,4 @@ for i = downsampleFactor:downsampleFactor:round(length(medTruePitch)/100) * 100
     end
     %fprintf(fileID,'%.3f \t %.3f \t %.3f \n', (i-1)/11000 , medTruePitch(i), prob(i));
 end
-
+a = 10;
