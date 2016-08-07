@@ -15,25 +15,27 @@ for l = 1:length(filenamesfull)-3
     audioPath = strcat('~/Documents/MATLAB/dataset2/audio/',filename);
     [timeAnnotation, pitchAnnotation] = readTxtAnnotation(strcat('~/Documents/MATLAB/dataset2/PitchTruthTracks/',filename));
     [timeMulti, pitchMulti, probMulti] = MultiPLLPitchtrack(audioPath);
+    %[timeMulti, pitchMulti, probMulti] = MultiPLLPlotting(audioPath);
     [timeMono, pitchMono ] = MonoPLLPitchtrack(audioPath);
     pitchMono(pitchMono<5) = 0;
     yinPitchPath= strcat('~/Documents/MATLAB/dataset2/PitchTruthMauch/',filename);
     [timePYIN, pitchPYIN] =  readSVL(yinPitchPath);
     pitchLength(l) = length(pitchAnnotation);
     
-%     figure;
-%     xlabel('Time (s)');
-%     ylabel('Frequency (Hz)');
-%     %title(filename);
-%     hold on;
-%     plot(timeAnnotation, pitchAnnotation,'+');
-%     plot(timePYIN, pitchPYIN,'k','LineWidth',1.5);
-%     plot(timeMono, pitchMono,'g','LineWidth',1.5);
-%     plot(timeMulti, pitchMulti,'r','LineWidth',1.5);
-%     hold off;
+    figure;
+    xlabel('Time (s)');
+    ylabel('Frequency (Hz)');
+    %title(filename);
+    hold on;
+    plot(timeAnnotation, pitchAnnotation,'color',[.8,.8,.8],'LineWidth',3);
+   
+    plot(timeMono, pitchMono','r');
+     plot(timePYIN, pitchPYIN,'k');
+    plot(timeMulti, pitchMulti,'b');
+    hold off;
     %legend('Ground Truth', 'PYIN','Mono PLL', 'Multi PLL' );
-    %xlim([1 5.7]);
-    %ylim([0 400]);
+    xlim([1 5.7]);
+    ylim([0 400]);
 
    
     
@@ -238,17 +240,22 @@ overallDiffMeanMono = mean(diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoV
 overallDiffAbsMeanMono = mean(abs(diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoVector) < 50)));
 overallDiffStdDevMono = std (diffMonoVector(~isnan(diffMonoVector) & abs(diffMonoVector) < 50));
 
-binCenters = -49.75:.5:49.75
+binCenters = -49.5:1:49.5
 figure;
-histogram(diffMonoVector(abs(diffMonoVector)<50),200);
+histogram(diffMonoVector(abs(diffMonoVector)<50),binCenters);
 set(gca,'yscale','log')
-xlabel('Deviation from PYIN pitch in Cent');
+%xlabel('Deviation from PYIN pitch in Cent');
 ylabel('Occurence');
+ylim([10 15000]);
 
 figure;
-histogram(diffMultiVector(abs(diffMultiVector)<50),200);
+histogram(diffMultiVector(abs(diffMultiVector)<50),binCenters);
 set(gca,'yscale','log')
 xlabel('Deviation from PYIN pitch in Cent');
 ylabel('Occurence');
+ylim([10 15000]);
+
+
+
 toc
 

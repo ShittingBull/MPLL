@@ -44,7 +44,7 @@ a = zeros(numFilters,9);
 b = zeros(numFilters,9);
 freqs = zeros(1,numFilters * 2);
 freqsPll = zeros(1,numFilters * 2);
-startFreq = 82.41;
+startFreq = 80.06;
 for i=1:numFilters
     % caluclation filter cutoff frqeuencies for octave wise PLL runs 
     freqs((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1)))/1200);
@@ -246,15 +246,7 @@ for i = 1: length(in)
     for j = 1:numFilters * 2
         
         candidates(j) = 100 - pitchDiffPairsCent(ceil(j/2), i) ;
-
-
-        %numSubHarmonics
-        if(sum(subHarmonicCounter(j,:,i))==0)
-            candidates(j) = candidates(j) +100;
-        else
-            candidates(j) = -200;
-        end
-        
+  
         %numOvertones
         if  pitchDiffPairsCent(ceil(j/2), i) <100 %&& j<8
             candidates(j) = candidates(j) + 25 * sum(overToneCounter(j,:,i));
@@ -269,8 +261,8 @@ for i = 1: length(in)
         if (i > 1)
             if truePitch(i-1) ~=0
                  oldPitchBonus = 100 * (3 - abs(1200 * log2(truePitch(i-1) / pitchVectors(j, i)))); 
-                 if oldPitchBonus < -100
-                     oldPitchBonus = -100;
+                 if oldPitchBonus < 0
+                     oldPitchBonus = 0;
                  end 
                  candidates(j) = candidates(j) + oldPitchBonus;
             end
@@ -282,6 +274,14 @@ for i = 1: length(in)
 %              elseif truePitch(i-1) ~=0 && (abs(1200 * log2(truePitch(i-1) / pitchVectors(j, i))) > 5)
 %                 candidates(j) = candidates(j) - 100;
 %             end
+        end
+        
+        
+         %numSubHarmonics
+        if(sum(subHarmonicCounter(j,:,i))==0)
+            candidates(j) = candidates(j) +100;
+        else
+            candidates(j) = 0;
         end
     end
 

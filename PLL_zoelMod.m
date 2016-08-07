@@ -54,18 +54,19 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         % generate oscillator control signal
         % alpha weighs the direct path signal in relation to the LP
         % signal
-        %alpha = 0.5;
-        alpha = 0.35;
-        f_osc(i) = KO  * (xd_lp(i)*(1-alpha) + xd(i)*alpha) + fRangeOsc;       
+        alpha = 0;
+        %alpha = 0.35;
+        f_osc(i) = KO * (xd_lp(i)*(1-alpha) + xd(i)*alpha) + fRangeOsc;       
         %f_osc(i) = (xd_lp(i)*(1-alpha) + xd(i)*alpha)*2 + 1;
 
         % PLL oscillator
         %oscillator states holds former outputsamples state(1) real
         %state(2) complex
         phasecounter = mod((phasecounter + f_osc(i)/fs * 2 * pi), 2*pi);
-        yc(i) = cos(phasecounter);
+        yc(i) = cos(phasecounter + pi / 2);
+        %modified for lock indicator --> gardner 
         %[yc(i), ys(i), osc_state1] = NCO_complex(f_osc(i) / fs, osc_state1);        
-
+        %yc(i) = yc(i) *  x_in;
     end
 % 
 %     figure;

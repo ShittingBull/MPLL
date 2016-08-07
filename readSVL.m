@@ -1,6 +1,5 @@
 
 function [sampletimes, freqs] = readSVL (path)
-path
 fid = fopen(strcat(path,'.svl'));
 %[timeref,freq,pvx] = textread(strcat('/Users/JohannesBoehler/Documents/MATLAB/dataset2/','AR_Lick11_fingered_N.txt'), '%f %f %f');
 counter = 0;
