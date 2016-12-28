@@ -4,7 +4,7 @@
 % PLL-BASED PITCH DETECTION AND TRACKING FOR AUDIO SIGNALS, 
 % Zölzer, Sankarababu, Möller (2012). 
 
-function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCenter)
+function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCenter)
 
     % init variables with zeros
         nsamples = length(samples);
@@ -32,7 +32,6 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         %[b,a] = ellip(1,3,30,[(fCenter - pllIntervall) / (fs/2) ,  (fCenter + pllIntervall) / (fs/2)]);
         %samples = filter (b,a,samples);                                 
                                           
-    cutoffs(1) = 0;
     for i = 2:nsamples
         x_in = samples(i);
        
@@ -54,8 +53,8 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelStd(samples,fs,fc_Pll, Kd, fCe
         % generate oscillator control signal
         % alpha weighs the direct path signal in relation to the LP
         % signal
-        alpha = 0;
-        %alpha = 0.35;
+        %alpha = 0;
+        alpha = 0.35;
         f_osc(i) = KO * (xd_lp(i)*(1-alpha) + xd(i)*alpha) + fRangeOsc;       
         %f_osc(i) = (xd_lp(i)*(1-alpha) + xd(i)*alpha)*2 + 1;
 
