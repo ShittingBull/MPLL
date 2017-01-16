@@ -11,7 +11,7 @@ downsampleFactor = fs / targetFs;
 in = resample(in,targetFs,fs);
 oldfs = fs;
 fs = oldfs / downsampleFactor;
-
+length(in)
 
 
 
@@ -39,37 +39,47 @@ fs = oldfs / downsampleFactor;
 
 %%%%%%%%-> filtering and Pll pitch tracking, 2 PLLs per Subband
 
-numFilters= 4;
+numFilters= 7;
 a = zeros(numFilters,9);
 b = zeros(numFilters,9);
 freqs = zeros(1,numFilters * 2);
 freqsPll = zeros(1,numFilters * 2);
-startFreq = 80.06;
+startFreq = 0;
 for i=1:numFilters
     % caluclation filter cutoff frqeuencies for octave wise PLL runs 
-    freqs((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1)))/1200);
-    freqs((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i))/1200);
+    freqs((i - 1) * 2 + 1) = startFreq + 160 * i
+    freqs((i - 1) * 2 + 2) = startFreq + 160 * (i + 1);
     %freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 300)/1200);
     %calculating PLL center frequencies
-    if i == 4
-         freqsPll((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i) + 100)/1200);
-         freqsPll((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1))- 100)/1200);
-    else
-         freqsPll((i - 1) * 2 + 2) = startFreq * 2^(((1200 * i) + 100)/1200);
-         freqsPll((i - 1) * 2 + 1) = startFreq * 2^(((1200 * (i-1))- 100)/1200);
-    end
-    [nonrec,rec] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(fs/2)) (freqs((i) * 2) /(fs/2))]);
-    b(i,:) = nonrec;
-    a(i,:) = rec;
+   
+    freqsPll((i - 1) * 2 + 1) = freqs((i - 1) * 2 + 1);
+    freqsPll((i - 1) * 2 + 2) = freqs((i - 1) * 2 + 2) ;
+   
+    
+    
+    [b(i,:),a(i,:)] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(11025/2)) (freqs((i) * 2) /(11025/2))]);
+%     [z_t,p_t,k_t] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(11025/2)) (freqs((i) * 2) /(11025/2))]);
+%     z(i,:) = z_t;
+%     p(i,:) = p_t;
+%     k(i,:) = k_t;
+%     b(i,:) = nonrec;
+%     a(i,:) = rec;
 end
+
+% sos1 = zp2sos (z(1,:),p(1,:),k(1,:));
+% sos2 = zp2sos (z(2,:),p(2,:),k(2,:));
+% sos3 = zp2sos (z(3,:),p(3,:),k(3,:));
+% sos4 = zp2sos (z(4,:),p(4,:),k(4,:));
+
 
 alpha = 0.95;
 in_4 = zeros(numFilters,length(in));
 in_4_flat_env = zeros(numFilters,length(in));
 env_4 = zeros(numFilters,length(in));
 pitchVectors = zeros(numFilters * 2,length(in));
-power_4 = zeros(numFilters, length(in));
 pl = zeros(numFilters * 2,length(in));
+power_4 = zeros(numFilters, length(in));
+
 for i=1:numFilters
     in_4(i,:)= filtfilt(b(i,:),a(i,:), in); 
     [in_4_flat_env(i,:), env_4(i,:)] = agcfunnew(in_4(i,:), 50, 100, 1, -50, fs);
@@ -86,6 +96,117 @@ for i=1:numFilters
     pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
     %pitchVectors(i * 2,:) = medfilt1 (pitchVectors(i * 2,:),100);
 end
+
+plenv = zeros(1,length(pl(1,:)));
+temp = zeros(1,length(pl(1,:)));
+[d,c] = ellip(2,1,80,.005);
+
+for i=1:numFilters*2
+    plenv(i,:) = filtfilt(d, c, abs(pl(i,:)));
+    %[temp(i,:),plenv(i,:)] = agcfunnew(pl(i,:), 30, 30, 1, -50, fs);
+end
+
+
+% looking for pitch tracks to indexes below and two indexes above 
+diffMatrix = NaN(numFilters * 2,2,length(in));
+idx = 0;
+for i = 1:numFilters * 2 
+    for j= 1: 2
+%         if j==1
+%             idx = -2;
+%         elseif j == 2
+%             idx = -1;
+%         elseif j == 3
+%             idx = 1;
+%         elseif j== 4
+%             idx = 2;
+%         end
+        idx = j; 
+        if i + idx <= 0 || i + idx > numFilters * 2
+            continue
+        end
+        tmp = (plenv(i,:)>0.02) & (plenv(j,:)>0.02) & abs(pitchVectors(i,:) - pitchVectors(i+idx,:))> 160;
+        tmp = double(tmp);
+        tmp (tmp==0) = nan;
+        
+        diffMatrix(i,j,:) = abs(pitchVectors(i,:) - pitchVectors(i+idx,:)) .* tmp;
+    end  
+end
+
+
+diffVector = NaN(numFilters * 2 * 2, length(in));
+
+for i = 1 : numFilters * 2 * 2
+    j = floor((i-1)/2)+1;
+    k = mod(i-1,2)+1;
+    diffVector(i,:)= diffMatrix(j,k,:);
+end
+
+
+
+% 
+% for i = 1:numFilters * 2
+%     for j= 1: 4
+%         if diffVector(i,j,:) - 
+% 
+
+tmp = nan(numFilters * 2 * 2,numFilters * 2 * 2,length(in));
+binaryDiff = zeros(numFilters * 2 * 2,numFilters * 2 * 2,length(in));
+binaryNum = zeros(numFilters * 2 * 2,length(in));
+pitch = nan(1, length(in));
+for i= 1 : numFilters * 2 * 2
+    tmp(i,:,:) = abs(diffVector(i,:) - diffVector(:,:)); 
+    binaryDiff(i,:,:) =   tmp(i,:,:) < 1 ;
+end
+
+binaryDiff = logical(binaryDiff);
+
+plenvTemp = zeros(numFilters * 2 * 2, length(in));
+for i = 1 : numFilters * 2 * 2
+    plenvTemp(i,:) = plenv(ceil(i/2),:);
+end
+
+for i = 1:length(in)  
+    for j = 1: numFilters * 2 * 2
+        binaryNum (j,i) = sum(double(binaryDiff(j,:,i)) .* plenvTemp(:,i)');
+        %binaryNum (j,i) = sum(double(binaryDiff(j,:,i)));
+    end
+end
+
+for i = 1:length(in)
+    [maxVal, maxIdx] = max(binaryNum(:,i));
+    %if (maxVal > .3)
+    pitch(i) = mean(diffVector(binaryDiff(maxIdx, :, i),i));
+    %end
+end
+    
+
+
+% diffdiffMatrix = NaN(numFilters * 2 * 2, numFilters * 2 * 4, length(in));
+% useDiffTrack = zeros(numFilters * 2 * 2, length(in));
+% 
+% for i = 1 : numFilters * 2 * 2
+%     for j = i+1 : numFilters * 2 * 2
+%         diffdiffMatrix(i,j,:) = abs(diffVector(i,:) - diffVector(j,:));
+%         temp1 = reshape(diffdiffMatrix(i,j,:) <= 5,1, length(diffdiffMatrix(i,j,:)));
+%         temp2 = diffVector(i,:) >= 80 & (~isnan(diffVector(i,:))) &  (~isnan(diffVector(j,:)));
+%         temp3 = useDiffTrack(i,:);
+%         
+%         useDiffTrack(i,:) = useDiffTrack(i,:) | (temp1 & temp2);
+%         useDiffTrack(j,:) = useDiffTrack(j,:) | (temp1 & temp2);
+%         %usePitchtrack(j,:) = diffdiffVector(i,j,:) <= 5 && diffVector(j,:) >= 80;  
+%     end
+% end
+% 
+% pitch= zeros(1, length(in));
+% for i =1: length(in)
+%     temp = useDiffTrack(:,i) .* diffVector(:,i); 
+%     %temp(isnan(temp)& any~(temp))
+%     temp1 = temp(~isnan(temp)& temp~=0);
+%     pitch(i) = mean(temp(~isnan(temp)& temp~=0));        
+% end
+
+
 
 BS = 1024;
 % figure(1);
