@@ -4,7 +4,7 @@
 % PLL-BASED PITCH DETECTION AND TRACKING FOR AUDIO SIGNALS, 
 % Zölzer, Sankarababu, Möller (2012). 
 
-function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCenter)
+function [F0, f_osc, yc, ys, pl] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCenter)
 
     % init variables with zeros
         nsamples = length(samples);
@@ -12,6 +12,7 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCe
         F0(nsamples)    = 0;
         yc(nsamples)    = 0;
         ys(nsamples)    = 0;
+        pl(nsamples)    = 0;
         f_osc(nsamples) = 0;
         xd_lp(nsamples) = 0;
         xd(nsamples)    = 0;
@@ -37,7 +38,7 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCe
        
         %xd(i) = x_in * yc(i-1) * Kd;
         xd(i) = x_in * yc(i-1) * Kd ;
-
+        pl(i) = ys(i-1) * x_in;
         % LP filter in Pll
         [ xd_lp(i), filtPll ] = applyFilter( xd(i), B_Pll, A_Pll, filtPll );
         
@@ -62,9 +63,11 @@ function [F0, f_osc, yc, ys, xd, xd_lp] = PLL_zoelMod(samples,fs,fc_Pll, Kd, fCe
         %oscillator states holds former outputsamples state(1) real
         %state(2) complex
         phasecounter = mod((phasecounter + f_osc(i)/fs * 2 * pi), 2*pi);
-        yc(i) = cos(phasecounter + pi / 2);
+        yc(i) = cos(phasecounter);
         %modified for lock indicator --> gardner 
-        %[yc(i), ys(i), osc_state1] = NCO_complex(f_osc(i) / fs, osc_state1);        
+        %[yc(i), ys(i), osc_state1] = NCO_complex(f_osc(i) / fs, osc_state1);    
+        ys(i) =  cos(phasecounter + pi/2);
+       
         %yc(i) = yc(i) *  x_in;
     end
 % 

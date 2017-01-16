@@ -69,7 +69,7 @@ in_4_flat_env = zeros(numFilters,length(in));
 env_4 = zeros(numFilters,length(in));
 pitchVectors = zeros(numFilters * 2,length(in));
 power_4 = zeros(numFilters, length(in));
-
+pl = zeros(numFilters * 2,length(in));
 for i=1:numFilters
     in_4(i,:)= filtfilt(b(i,:),a(i,:), in); 
     [in_4_flat_env(i,:), env_4(i,:)] = agcfunnew(in_4(i,:), 50, 100, 1, -50, fs);
@@ -79,10 +79,10 @@ for i=1:numFilters
     Kd = 290 * i;   
     % calculate 2 PLL pitch tracks per octave region + filtering of PLL
     % pitch tracks
-    [pitchVectors((i - 1) * 2 +1,:), fosc, yc, ys, xd, xdlp] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd, freqsPll((i - 1) * 2 + 1));
+    [pitchVectors((i - 1) * 2 +1,:), fosc, yc, ys, pl((i - 1) * 2 +1,:)] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd, freqsPll((i - 1) * 2 + 1));
     pitchVectors((i - 1) * 2 +1,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors((i - 1) * 2 +1,:));
     %pitchVectors((i - 1) * 2 +1,:) = medfilt1 (pitchVectors((i - 1) * 2 +1,:),30);
-    [pitchVectors(i * 2,:), fosc, yc, ys, xd, xdlp] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd , freqsPll((i ) * 2));
+    [pitchVectors(i * 2,:), fosc, yc, ys, pl(i * 2,:)] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd , freqsPll((i ) * 2));
     pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
     %pitchVectors(i * 2,:) = medfilt1 (pitchVectors(i * 2,:),100);
 end
