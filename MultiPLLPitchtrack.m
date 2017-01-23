@@ -3,7 +3,7 @@ function [timeVectorOut, pitchOut, probOut] = MultiPLLPitchtrack (filename)
 [in fs] = audioread(strcat(filename,'.wav'));
 %[in fs] = wavread('guitar1.wav');
 in = in(:,1);
-in = mean(in, 2);
+%in = mean(in, 2);
 %in = in( 1 :44100 * 10);
 %in = in(1 : 44100 * 30);
 targetFs = 11000;
@@ -39,25 +39,25 @@ length(in)
 
 %%%%%%%%-> filtering and Pll pitch tracking, 2 PLLs per Subband
 
-numFilters= 7;
-a = zeros(numFilters,9);
-b = zeros(numFilters,9);
-freqs = zeros(1,numFilters * 2);
-freqsPll = zeros(1,numFilters * 2);
+numPLLs= 10;
+freqsPll = zeros(1,numPLLs * 2);
+Kd = zeros(1,numPLLs * 2);
+numDiffPerPLL = 3;
 startFreq = 0;
-for i=1:numFilters
+for i=1:10
     % caluclation filter cutoff frqeuencies for octave wise PLL runs 
-    freqs((i - 1) * 2 + 1) = startFreq + 160 * i
-    freqs((i - 1) * 2 + 2) = startFreq + 160 * (i + 1);
+    %freqs((i - 1) * 2 + 1) = startFreq + 160 * i
+    %freqs((i - 1) * 2 + 2) = startFreq + 160 * (i + 1);
     %freqsPll((i - 1) * 2 + 1) = 82.41 * 2^(((1200 * (i-1))- 300)/1200);
     %calculating PLL center frequencies
    
-    freqsPll((i - 1) * 2 + 1) = freqs((i - 1) * 2 + 1);
-    freqsPll((i - 1) * 2 + 2) = freqs((i - 1) * 2 + 2) ;
+    freqsPll(i) = 160 * i;
+    Kd(i) = 400 + 100 *i;
+    %freqsPll((i - 1) * 2 + 2) = freqs((i - 1) * 2 + 2) ;
    
     
     
-    [b(i,:),a(i,:)] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(11025/2)) (freqs((i) * 2) /(11025/2))]);
+    %[b(i,:),a(i,:)] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(11025/2)) (freqs((i) * 2) /(11025/2))]);
 %     [z_t,p_t,k_t] = ellip(4,1,80, [(freqs((i - 1) * 2 + 1)/(11025/2)) (freqs((i) * 2) /(11025/2))]);
 %     z(i,:) = z_t;
 %     p(i,:) = p_t;
@@ -73,27 +73,24 @@ end
 
 
 alpha = 0.95;
-in_4 = zeros(numFilters,length(in));
-in_4_flat_env = zeros(numFilters,length(in));
-env_4 = zeros(numFilters,length(in));
-pitchVectors = zeros(numFilters * 2,length(in));
-pl = zeros(numFilters * 2,length(in));
-power_4 = zeros(numFilters, length(in));
+in_flat_env = zeros(1,length(in));
+env = zeros(1,length(in));
+pitchVectors = zeros(numPLLs,length(in));
+pl = zeros(numPLLs,length(in));
 
-for i=1:numFilters
-    in_4(i,:)= filtfilt(b(i,:),a(i,:), in); 
-    [in_4_flat_env(i,:), env_4(i,:)] = agcfunnew(in_4(i,:), 50, 100, 1, -50, fs);
-    power_4(i,:) = env_4(i,:) .^2;
-    %in_4_flat_env(i,:) = in_4_flat_env(i,:) .* sqrt( sum(in_4(i,:).^2) / sum(in_4(i,:).^2) );
+[in_flat_env, env] = agcfunnew(in, 50, 100, 1, -50, fs);
+
+for i=1:numPLLs
+    %in_4(i,:)= filtfilt(b(i,:),a(i,:), in); 
    
-    Kd = 290 * i;   
+    %power_4(i,:) = env_4(i,:) .^2;
+    %in_4_flat_env(i,:) = in_4_flat_env(i,:) .* sqrt( sum(in_4(i,:).^2) / sum(in_4(i,:).^2) );
+    
     % calculate 2 PLL pitch tracks per octave region + filtering of PLL
     % pitch tracks
-    [pitchVectors((i - 1) * 2 +1,:), fosc, yc, ys, pl((i - 1) * 2 +1,:)] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd, freqsPll((i - 1) * 2 + 1));
-    pitchVectors((i - 1) * 2 +1,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors((i - 1) * 2 +1,:));
-    %pitchVectors((i - 1) * 2 +1,:) = medfilt1 (pitchVectors((i - 1) * 2 +1,:),30);
-    [pitchVectors(i * 2,:), fosc, yc, ys, pl(i * 2,:)] = PLL_zoelMod(in_4_flat_env(i,:),fs, 23  , Kd , freqsPll((i ) * 2));
-    pitchVectors( i * 2,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i * 2,:));
+    [pitchVectors(i,:), fosc, yc, ys, pl(i,:)] = PLL_zoelMod(in_flat_env,fs, 23  , Kd(i), freqsPll(i));
+    pitchVectors(i,:) = filtfilt(1-alpha, [1 -alpha],pitchVectors(i,:));
+    %pitchVectors((i - 1) * 2 +1,:) = medfilt1 (pitchVectors((i - 1) * 2 +1,:),30)
     %pitchVectors(i * 2,:) = medfilt1 (pitchVectors(i * 2,:),100);
 end
 
@@ -101,44 +98,34 @@ plenv = zeros(1,length(pl(1,:)));
 temp = zeros(1,length(pl(1,:)));
 [d,c] = ellip(2,1,80,.005);
 
-for i=1:numFilters*2
+for i=1:numPLLs
     plenv(i,:) = filtfilt(d, c, abs(pl(i,:)));
-    %[temp(i,:),plenv(i,:)] = agcfunnew(pl(i,:), 30, 30, 1, -50, fs);
+ 
 end
 
 
 % looking for pitch tracks to indexes below and two indexes above 
-diffMatrix = NaN(numFilters * 2,2,length(in));
+diffMatrix = NaN(numPLLs,numDiffPerPLL,length(in));
 idx = 0;
-for i = 1:numFilters * 2 
-    for j= 1: 2
-%         if j==1
-%             idx = -2;
-%         elseif j == 2
-%             idx = -1;
-%         elseif j == 3
-%             idx = 1;
-%         elseif j== 4
-%             idx = 2;
-%         end
-        idx = j; 
-        if i + idx <= 0 || i + idx > numFilters * 2
+for i = 1:numPLLs
+    for j= 1: numDiffPerPLL
+        if  i + j > numPLLs
             continue
         end
-        tmp = (plenv(i,:)>0.02) & (plenv(j,:)>0.02) & abs(pitchVectors(i,:) - pitchVectors(i+idx,:))> 160;
+        tmp = (plenv(i,:)>0.02) & (plenv(i+j,:)>0.02) & abs(pitchVectors(i,:) - pitchVectors(i+j,:))> 160;
         tmp = double(tmp);
         tmp (tmp==0) = nan;
         
-        diffMatrix(i,j,:) = abs(pitchVectors(i,:) - pitchVectors(i+idx,:)) .* tmp;
+        diffMatrix(i,j,:) = abs(pitchVectors(i,:) - pitchVectors(i+j,:)) .* tmp;
     end  
 end
 
+%holds differences to three higher pitch samples per PLL
+diffVector = NaN(numPLLs * numDiffPerPLL, length(in));
 
-diffVector = NaN(numFilters * 2 * 2, length(in));
-
-for i = 1 : numFilters * 2 * 2
-    j = floor((i-1)/2)+1;
-    k = mod(i-1,2)+1;
+for i = 1 : numPLLs * numDiffPerPLL
+    j = floor((i-1)/numDiffPerPLL)+1;
+    k = mod(i-1,numDiffPerPLL)+1;
     diffVector(i,:)= diffMatrix(j,k,:);
 end
 
@@ -150,34 +137,56 @@ end
 %         if diffVector(i,j,:) - 
 % 
 
-tmp = nan(numFilters * 2 * 2,numFilters * 2 * 2,length(in));
-binaryDiff = zeros(numFilters * 2 * 2,numFilters * 2 * 2,length(in));
-binaryNum = zeros(numFilters * 2 * 2,length(in));
+tmp = nan(numPLLs * numDiffPerPLL,numPLLs * numDiffPerPLL,length(in));
+range = 1;
+bDiffInRange = zeros(numPLLs * numDiffPerPLL, numPLLs * numDiffPerPLL,length(in));
+plSumDiffInRange = zeros(numPLLs * numDiffPerPLL,length(in));
 pitch = nan(1, length(in));
-for i= 1 : numFilters * 2 * 2
+for i= 1 : numPLLs * numDiffPerPLL
     tmp(i,:,:) = abs(diffVector(i,:) - diffVector(:,:)); 
-    binaryDiff(i,:,:) =   tmp(i,:,:) < 1 ;
+    bDiffInRange(i,:,:) =   tmp(i,:,:) < range ;
 end
 
-binaryDiff = logical(binaryDiff);
+bDiffInRange = logical(bDiffInRange);
 
-plenvTemp = zeros(numFilters * 2 * 2, length(in));
-for i = 1 : numFilters * 2 * 2
-    plenvTemp(i,:) = plenv(ceil(i/2),:);
+plenvTemp = zeros(numPLLs * numDiffPerPLL, length(in));
+for i = 1 : numPLLs * numDiffPerPLL
+    plenvTemp(i,:) = plenv(ceil(i/numDiffPerPLL),:);
 end
 
 for i = 1:length(in)  
-    for j = 1: numFilters * 2 * 2
-        binaryNum (j,i) = sum(double(binaryDiff(j,:,i)) .* plenvTemp(:,i)');
+    for j = 1: numPLLs * numDiffPerPLL
+        plSumDiffInRange (j,i) = sum(double(bDiffInRange(j,:,i)) .* plenvTemp(:,i)');
         %binaryNum (j,i) = sum(double(binaryDiff(j,:,i)));
     end
 end
 
 for i = 1:length(in)
-    [maxVal, maxIdx] = max(binaryNum(:,i));
-    %if (maxVal > .3)
-    pitch(i) = mean(diffVector(binaryDiff(maxIdx, :, i),i));
-    %end
+%     temp = diffVector(bDiffInRange(j, :, i),i);
+%     [val, Idx] = sort(temp);
+%     maxVal = 0;
+%     for j= 1:length(val)
+%         if  plSumDiffInRange(Idx(j),i) > .5
+%             maxIdx = Idx(j);
+%             maxVal = plSumDiffInRange(maxIdx,i);
+%             break;
+%         end
+%     end
+    [maxVal, maxIdx] = max(plSumDiffInRange(:,i));
+    
+    
+    for j = 1: numPLLs * numDiffPerPLL
+        temp = diffVector(maxIdx,i) / diffVector(j,i);
+        if temp > 1.95 && temp < 2.05 && plSumDiffInRange(j,i) > .5
+            maxIdx = j;
+        end 
+    end
+    
+    if (maxVal > .5)
+        pitch(i) = mean(diffVector(bDiffInRange(maxIdx, :, i),i));
+    else 
+        pitch(i) = 0;
+    end
 end
     
 
@@ -205,7 +214,13 @@ end
 %     temp1 = temp(~isnan(temp)& temp~=0);
 %     pitch(i) = mean(temp(~isnan(temp)& temp~=0));        
 % end
-
+figure(3);
+plot(pitch);
+figure(4);
+hold on;
+for i =1: numPLLs 
+    plot(pitchVectors(i,:));
+end
 
 
 BS = 1024;
@@ -217,8 +232,7 @@ BS = 1024;
 % for i = 1 : numFilters
 %     if i == 1
 %         color = 'k';
-%     elseif i == 2
-%         color = 'r';
+%     elseif i == 2%         color = 'r';
 %     elseif i == 3
 %         color = 'g';
 %     elseif i == 4
