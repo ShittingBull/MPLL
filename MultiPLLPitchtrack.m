@@ -44,13 +44,13 @@ plotSpectrogram(in, 2048, 1024, fs, 'ylim', [1 1200]);
 
 
 %%%%%%%%-> filtering and Pll pitch tracking, 2 PLLs per Subband
-PLLDiff = 120;
-numPLLs= 10;
+PLLDiff = 80;
+numPLLs= 15;
 freqsPll = zeros(1,numPLLs * 2);
 Kd = zeros(1,numPLLs * 2);
-numDiffPerPLL = 3;
+numDiffPerPLL = 5;
 startFreq = 0;
-for i=1:10
+for i=1:numPLLs
     freqsPll(i) = PLLDiff * i;
     Kd(i) =450;
 end
@@ -101,7 +101,10 @@ for i=1:length(in)
                 if  j + k > numIdxes
                     continue
                 end
-                pitchDiff((j-1)*numDiffPerPLL+k) = abs(selectedPitches(j)-selectedPitches(j+k));
+                t = abs(selectedPitches(j)-selectedPitches(j+k));
+                if (t > PLLDiff)
+                    pitchDiff((j-1)*numDiffPerPLL+k) = t;
+                end    
                 selectedPlEnvs_((j-1)*numDiffPerPLL+k) = selectedPlEnvs(j);
             end
         end
